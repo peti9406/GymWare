@@ -6,15 +6,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'GymWare')</title>
-
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-
-    <!-- Optional: Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-
+    <link rel="icon" href="{{ asset('images/dumbbell-svgrepo-com.svg') }}" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Autofill fix */
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
         input:-webkit-autofill {
             caret-color: white;
             box-shadow: inset 0 0 0 1000px transparent;
@@ -22,14 +19,21 @@
             transition: background-color 5000s ease-in-out 0s;
         }
     </style>
-</head>
-<body class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
 
-<video autoplay muted loop playsinline class="absolute top-0 left-0 w-full h-full object-cover">
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Optional: Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+
+</head>
+<body class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-2 bg-gray-100">
+
+<video autoplay muted loop playsinline class="fixed top-0 left-0 w-full h-full object-cover">
     <source src="{{ asset('videos/login_background.mp4') }}" type="video/mp4">
 </video>
 
-<div class="absolute inset-0 bg-black/40"></div>
+<div class="fixed inset-0 bg-black/40"></div>
 
 <!-- Optional Logo or Navbar -->
 <div class="relative z-10 mb-6">
@@ -39,7 +43,7 @@
 </div>
 
 <!-- Main Content -->
-<div class="relative z-10 w-full sm:max-w-md px-6 py-4 bg-black/80 border border-gray-800 shadow-md overflow-hidden rounded-xl">
+<div class="relative z-10 w-full sm:max-w-md px-6 py-4 bg-[#141414]/90 border border-gray-800 shadow-md overflow-hidden sm:rounded-xl">
     @yield('content')
 </div>
 

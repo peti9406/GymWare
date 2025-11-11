@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
-use App\Models\WorkoutDetails;
 use App\Repositories\WorkoutDetailRepository;
 use App\Repositories\WorkoutPlanRepository;
 use App\Repositories\WorkoutRepository;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Redirector;
+use Illuminate\Support\Carbon;
 
 class WorkoutService
 {
@@ -21,9 +24,9 @@ class WorkoutService
     }
 
 
-    public function createWorkout(int $planId): int
+    public function createWorkout(int $planId, float $totalWeight): int
     {
-        return $this->workoutRepository->create($planId);
+        return $this->workoutRepository->create($planId, $totalWeight);
     }
 
     public function createWorkoutDetails(array $data): void
@@ -84,26 +87,29 @@ class WorkoutService
 
     private function formatDetail(mixed $workoutData): array
     {
-        $details = [];
+        $details = ['total_weight' => $workoutData['total_weight'], 'exercises' => []];
         $data = $workoutData['details'];
 
         for ($i = 0; $i < count($data); $i++) {
             $exercise = $data[$i]['name'];
 
-            if (!array_key_exists($exercise, $details)) {
-                $details[$exercise] = [
+            if (!array_key_exists($exercise, $details['exercises'])) {
+                $details['exercises'][$exercise] = [
                     ['set' => $data[$i]['set'],
                         'reps' => $data[$i]['reps'],
                         'weight' => $data[$i]['weight'],]
                 ];
             } else {
-                $details[$exercise][] =
+                $details['exercises'][$exercise][] =
                     ['set' => $data[$i]['set'],
                         'reps' => $data[$i]['reps'],
                         'weight' => $data[$i]['weight'],];
             }
         }
-        return [$workoutData['date'] => $details];
+
+        $date = Carbon::parse($workoutData['date'])->format('d-m-Y H:i:s');
+
+        return [$date => $details];
     }
 
     public function getWorkoutsWithDetailsByUserId(string $userId): array
@@ -142,5 +148,51 @@ class WorkoutService
             }
         }
         return true;
+    }
+
+    public function getTotalWeight(array $exerciseId, array $weights, array $reps): float
+    {
+        $total = 0;
+
+        foreach ($exerciseId as $exercise) {
+            for ($i = 0; $i < count($weights[$exercise]); $i++) {
+                $total += $weights[$exercise][$i] * $reps[$exercise][$i];
+            }
+        }
+
+        return $total;
+    }
+
+    public function getWorkoutsDateAndWeightByPlanId(int $planId): array {
+        return $this->workoutRepository->findByPlanIdDateAndWeight($planId);
+    }
+
+    public function createWorkoutFromRequest(Request $request): RedirectResponse|Redirector
+    {
+        $planId = $request->input('workout-plan-id');
+
+        $exerciseIds = $request->input('exercise-id');
+        $names = $request->input('exercise-name');
+        $weight = $request->input('weight');
+        $reps = $request->input('reps');
+
+        $isValid = $this->validateInputs($names, $exerciseIds, $weight, $reps);
+
+        if (!$isValid) {
+            return redirect('/workout/create/' . $planId)->with('error', 'You cannot set a negative value to weight or repetition!');
+        }
+
+        $totalWeight = $this->getTotalWeight($exerciseIds, $weight, $reps);
+
+        $workoutId = $this->createWorkout($planId, $totalWeight);
+        $this->createWorkoutDetails([
+            'workout_id' => $workoutId,
+            'exercise-id' => $exerciseIds,
+            'names' => $names,
+            'weight' => $weight,
+            'reps' => $reps
+        ]);
+
+        return redirect('/workout/history');
     }
 }

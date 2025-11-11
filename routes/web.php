@@ -1,10 +1,11 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GymController;
+use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ExerciseDBController;
 use App\Http\Controllers\ExerciseController;
-use App\Http\Controllers\ExerciseDetailController;
 use App\Http\Controllers\WorkoutController;
 use App\Http\Controllers\WorkoutPlanController;
 use App\Http\Controllers\AppointmentController;
@@ -51,8 +52,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/workout/create/{id}', [WorkoutController::class, 'create'] );
     Route::post('/workout/create', [WorkoutController::class, 'store'] );
 
+
     Route::get('/workout/history', [WorkoutController::class, 'index']);
     Route::get('/workout/history/{id}', [WorkoutController::class, 'show'] );
+
+    Route::get('/workout/progression/{id}', [WorkoutController::class, 'progression'] );
+
+    //PDF downloads
+    Route::post('/workout/download/{id}', [PdfController::class, 'download']);
+    Route::post('/workout/progression/download', [PdfController::class, 'downloadChart'] );
 });
 
 Route::middleware('auth')->group(function (){
@@ -63,4 +71,11 @@ Route::middleware('auth')->group(function (){
     Route::get('/my-appointments', [AppointmentController::class, 'myAppointments'])->name('appointments.myAppointments');
     Route::patch('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
 });
+
+//Gym Locator
+Route::middleware('auth')->group(function (){
+    Route::get('/gymmap', function () {return view('gymmap');});
+    Route::get('/gymsdata', [GymController::class, 'preload']);
+});
+
 

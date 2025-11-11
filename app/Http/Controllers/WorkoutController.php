@@ -2,66 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\WorkoutPlan;
-use App\Services\ExerciseDBService;
-use App\Services\WorkoutPlanService;
-use App\Services\WorkoutService;
+use App\Facades\ExerciseDBSvc;
+use App\Facades\WorkoutPlanSvc;
+use App\Facades\WorkoutProgressionSvc;
+use App\Facades\WorkoutSvc;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class WorkoutController extends Controller
 {
-    protected WorkoutPlanService $workoutPlanService;
-    protected ExerciseDBService $exerciseDBService;
-    protected WorkoutService $workoutService;
-
-
-    public function __construct(WorkoutPlanService $workoutPlanService, ExerciseDBService $exerciseDBService, WorkoutService $workoutService)
-    {
-        $this->workoutPlanService = $workoutPlanService;
-        $this->exerciseDBService = $exerciseDBService;
-        $this->workoutService = $workoutService;
-    }
-
     public function create(int $id)
     {
-        $plan = $this->workoutPlanService->getWorkoutPlanById($id);
-        $plan = $this->exerciseDBService->getExercisesForPlan($plan);
+        $plan = WorkoutPlanSvc::getWorkoutPlanById($id);
+        $plan = ExerciseDBSvc::getExercisesForPlan($plan);
         return view('workout.create', compact('plan'));
     }
 
     public function store(Request $request)
     {
-        $planId = $request->input('workout-plan-id');
-
-        $exerciseIds = $request->input('exercise-id');
-        $names = $request->input('exercise-name');
-        $weight = $request->input('weight');
-        $reps = $request->input('reps');
-
-        $isValid = $this->workoutService->validateInputs($names, $exerciseIds, $weight, $reps);
-
-        if (!$isValid) {
-            return redirect('/workout/create/' . $planId)->with('error', 'You cannot set a negative value to weight or repetition!');
-        }
-
-        $workoutId = $this->workoutService->createWorkout($planId);
-        $this->workoutService->createWorkoutDetails([
-            'workout_id' => $workoutId,
-            'exercise-id' => $exerciseIds,
-            'names' => $names,
-            'weight' => $weight,
-            'reps' => $reps
-        ]);
-        return redirect('/workout/history');
+        WorkoutSvc::createWorkoutFromRequest($request);
     }
 
     public function show(int $planId)
     {
-        $workouts = $this->workoutService->getWorkoutWithDetailsByPlanId($planId);
+        $workouts = WorkoutSvc::getWorkoutWithDetailsByPlanId($planId);
 
         if (empty($workouts)) {
-            $plan = $this->workoutPlanService->getWorkoutPlanById($planId);
+            $plan = WorkoutPlanSvc::getWorkoutPlanById($planId);
             $workouts = ['name' => $plan['name']];
         }
 
@@ -71,8 +38,31 @@ class WorkoutController extends Controller
     public function index()
     {
         $userId = Auth::id();
-        $workouts = $this->workoutService->getWorkoutsWithDetailsByUserId($userId);
+        $workouts = WorkoutSvc::getWorkoutsWithDetailsByUserId($userId);
         return view('workout.history', ['data' => $workouts]);
     }
 
+    public function progression(Request $request, string $id)
+    {
+        $workouts = WorkoutSvc::getWorkoutWithDetailsByPlanId($id);
+
+        if (!$workouts || count($workouts['workouts']) < 2) {
+            $plan = WorkoutPlanSvc::getWorkoutPlanById($id);
+            return view('workout.progression', [
+                'plan' => $plan['name'],
+                'id' => $id,
+                'error' => 'You have to complete at least 2 of this workout to check progression!'
+            ]);
+        }
+
+        $chartType = $request->query("chart") ?? 'max-lifts';
+        $chart = WorkoutProgressionSvc::getProgressionChart($id, $chartType, $workouts);
+
+        return view('workout.progression', [
+            'plan' => $workouts['name'],
+            'id' => $id,
+            'chart' => $chart,
+            'chartType' => $chartType
+        ]);
+    }
 }

@@ -1,11 +1,10 @@
-@extends('layouts.plan')
+@extends('layouts.main')
 
 @section('title', 'Exercise Catalog')
 
 @section('content')
 
-    <div class="max-w-6xl min-w-6xl mx-auto py-8">
-        <h1 class="text-3xl font-bold mb-6">Exercise Catalog</h1>
+    <div class="max-w-6xl mx-auto py-8 px-6">
         <x-catalog.filtering-form
             action="/exercises"
             :bodyparts="$bodyparts"
@@ -32,7 +31,10 @@
                     <x-catalog.exercise-card :exercise="$exercise"></x-catalog.exercise-card>
                 </a>
             @empty
-                <p>No exercises found</p>
+                <div class="bg-white/5 border border-white/20 p-2 rounded-xl">
+                    <p class="text-red-500">No exercises found</p>
+                </div>
+
             @endforelse
         </div>
 
